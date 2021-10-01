@@ -13,6 +13,11 @@ contract FlashloanV2 is FlashLoanReceiverBaseV2, Withdrawable {
     ISwapRouter public immutable swapRouter;
     uint24 public constant poolFee = 3000;
 
+    event log(
+        string indexed text,
+        uint256 indexed lmao
+    );
+
     // kovan reserve asset addresses
     address kovanAave = 0xB597cd8D3217ea6477232F9217fa70837ff667Af;
     address kovanDai = 0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD;
@@ -43,6 +48,8 @@ contract FlashloanV2 is FlashLoanReceiverBaseV2, Withdrawable {
         address initiator,
         bytes calldata params
     ) external override returns (bool) {
+        emit log("amounts", amounts[0]);
+        emit log("premiums", premiums[0]);
         //
         // This contract now has the funds requested.
         // Your logic goes here.
@@ -53,26 +60,26 @@ contract FlashloanV2 is FlashLoanReceiverBaseV2, Withdrawable {
         // Therefore ensure your contract has enough to repay
         // these amounts.
         
-        // initialise lending pool instance
-        ILendingPoolV2 lendingPool = ILendingPoolV2(LENDING_POOL);
+        // // initialise lending pool instance
+        // ILendingPoolV2 lendingPool = ILendingPoolV2(LENDING_POOL);
         
-        // deposits the flashed AAVE, DAI and Link liquidity onto the lending pool
-        flashDeposit(lendingPool, amounts[0]);
+        // // deposits the flashed AAVE, DAI and Link liquidity onto the lending pool
+        // flashDeposit(lendingPool, amounts[0]);
 
-        //uint256 borrowAmt = 100 * 1e18; // to borrow 100 units of x asset
+        // //uint256 borrowAmt = 100 * 1e18; // to borrow 100 units of x asset
         
-        // borrows 'borrowAmt' amount of LINK using the deposited collateral
-        //flashBorrow(lendingPool, kovanLink, borrowAmt);
+        // // borrows 'borrowAmt' amount of LINK using the deposited collateral
+        // //flashBorrow(lendingPool, kovanLink, borrowAmt);
         
-        // repays the 'borrowAmt' mount of LINK to unlock the collateral
-        //flashRepay(lendingPool, kovanLink, borrowAmt);
+        // // repays the 'borrowAmt' mount of LINK to unlock the collateral
+        // //flashRepay(lendingPool, kovanLink, borrowAmt);
  
-        // withdraws the AAVE, DAI and LINK collateral from the lending pool
-        flashWithdraw(lendingPool, amounts[0]);
+        // // withdraws the AAVE, DAI and LINK collateral from the lending pool
+        // flashWithdraw(lendingPool, amounts[0]);
         
 
-        // Approve the LendingPool contract allowance to *pull* the owed amount
-        // i.e. AAVE V2's way of repaying the flash loan
+        // // Approve the LendingPool contract allowance to *pull* the owed amount
+        // // i.e. AAVE V2's way of repaying the flash loan
 
         for (uint256 i = 0; i < assets.length; i++) {
             uint256 amountOwing = amounts[i].add(premiums[i]);
@@ -127,14 +134,9 @@ contract FlashloanV2 is FlashLoanReceiverBaseV2, Withdrawable {
         );
     }
 
-    /*
-     *  Flash multiple assets
-     */
-    function flashloan(address[] memory assets, uint256[] memory amounts)
-        public
-        onlyOwner
-    {
-        _flashloan(assets, amounts);
+
+    function showHello() public view returns(uint256) {
+        return 100;
     }
 
     /*
@@ -142,7 +144,7 @@ contract FlashloanV2 is FlashLoanReceiverBaseV2, Withdrawable {
      */
     function flashloan(address _asset) public onlyOwner {
         bytes memory data = "";
-        uint256 amount = 100000000000000000;
+        uint256 amount = 1e18;
 
         address[] memory assets = new address[](1);
         assets[0] = _asset;

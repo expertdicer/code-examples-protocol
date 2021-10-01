@@ -6,16 +6,13 @@
 const hre = require("hardhat");
 
 async function main() {
-    const FlashloanV2 = await hre.ethers.getContractFactory("FlashloanV2");
-    const flashloanV2 = await FlashloanV2.deploy("0x88757f2f99175387ab4c6a4b3067c77a695b0349","0xE592427A0AEce92De3Edee1F18E0157C05861564");
-    await flashloanV2.deployed();
-    console.log("Address flashloanV2 contract: ", flashloanV2.address);
-    
-    var showHelloTx = await flashloanV2.showHello();
-    console.log(showHelloTx);
-
-    var flashLoanTx = await flashloanV2.flashloan("0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD");
-    await flashloanV2.waited();
+    const testFlashLoan = await hre.ethers.getContractAt("FlashloanV2","0x7483c8621DAFB5BcaB557E09b8dFCA3c7A57A3F8");
+    console.log("FlashloanV2: ", testFlashLoan.address);
+    // const estimatedGas = await testFlashLoan.estimateGas.showAddress();
+    // console.log("gas: ", estimatedGas);
+    var temp = await testFlashLoan.flashloan("0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD",{gasLimit:8000000,gasPrice:1000000000});
+    await temp.wait();
+    console.log("tx: ", temp);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
