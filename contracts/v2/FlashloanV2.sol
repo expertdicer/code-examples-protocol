@@ -23,6 +23,7 @@ contract FlashloanV2 is FlashLoanReceiverBaseV2, Withdrawable {
     address kovanDai = 0xFf795577d9AC8bD7D90Ee22b6C1703490b6512FD;
     address kovanLink = 0xAD5ce863aE3E4E9394Ab43d4ba0D80f419F61789;
     address kovanADai = 0xdCf0aF9e59C002FA3AA091a46196b37530FD48a8;
+    address kovanProDai = 0x4F96Fe3b7A6Cf9725f59d353F723c1bDb64CA6Aa;
 
     constructor(address _addressProvider, ISwapRouter _swapRouter)
         FlashLoanReceiverBaseV2(_addressProvider)
@@ -77,7 +78,24 @@ contract FlashloanV2 is FlashLoanReceiverBaseV2, Withdrawable {
         // // withdraws the AAVE, DAI and LINK collateral from the lending pool
         // flashWithdraw(lendingPool, amounts[0]);
         
-
+        flashDeposit(LENDING_POOL, amounts[0]);  
+        // Approve the router to spend DAI.        
+        TransferHelper.safeApprove(kovanADai, address(swapRouter), amounts[0]);
+        // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.       
+        // We also set the sqrtPriceLimitx96 to be 0 to ensure we swap our exact input amount.       
+        ISwapRouter.ExactInputSingleParams memory paramsSwap = 
+            ISwapRouter.ExactInputSingleParams({
+                tokenIn: kovanADai,
+                tokenOut: kovanDai,
+                fee: poolFee,
+                recipient: msg.sender,
+                deadline: block.timestamp,
+                amountIn: amounts[0],
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+        // The call to exactInputSingle executes the swap.        
+        uint256 amountOut = swapRouter.exactInputSingle(paramsSwap);
         // // Approve the LendingPool contract allowance to *pull* the owed amount
         // // i.e. AAVE V2's way of repaying the flash loan
 
