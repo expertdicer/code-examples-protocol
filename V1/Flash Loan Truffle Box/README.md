@@ -1,1 +1,0 @@
-The v1 flash loan truffle box can be found here: https://github.com/aave/flashloan-box

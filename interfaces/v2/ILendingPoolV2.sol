@@ -1,151 +1,11 @@
 // SPDX-License-Identifier: agpl-3.0
-pragma solidity 0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
-import { DataTypes } from "Libraries.sol";
+import {ILendingPoolAddressesProviderV2} from './ILendingPoolAddressesProviderV2.sol';
+import {DataTypes} from '../../libraries/v2/DataTypes.sol';
 
-/**
- * @dev Interface of the ERC20 standard as defined in the EIP.
- */
-interface IERC20 {
-  /**
-   * @dev Returns the amount of tokens in existence.
-   */
-  function totalSupply() external view returns (uint256);
-
-  /**
-   * @dev Returns the amount of tokens owned by `account`.
-   */
-  function balanceOf(address account) external view returns (uint256);
-
-  /**
-   * @dev Moves `amount` tokens from the caller's account to `recipient`.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * Emits a {Transfer} event.
-   */
-  function transfer(address recipient, uint256 amount) external returns (bool);
-
-  /**
-   * @dev Returns the remaining number of tokens that `spender` will be
-   * allowed to spend on behalf of `owner` through {transferFrom}. This is
-   * zero by default.
-   *
-   * This value changes when {approve} or {transferFrom} are called.
-   */
-  function allowance(address owner, address spender) external view returns (uint256);
-
-  /**
-   * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * IMPORTANT: Beware that changing an allowance with this method brings the risk
-   * that someone may use both the old and the new allowance by unfortunate
-   * transaction ordering. One possible solution to mitigate this race
-   * condition is to first reduce the spender's allowance to 0 and set the
-   * desired value afterwards:
-   * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-   *
-   * Emits an {Approval} event.
-   */
-  function approve(address spender, uint256 amount) external returns (bool);
-
-  /**
-   * @dev Moves `amount` tokens from `sender` to `recipient` using the
-   * allowance mechanism. `amount` is then deducted from the caller's
-   * allowance.
-   *
-   * Returns a boolean value indicating whether the operation succeeded.
-   *
-   * Emits a {Transfer} event.
-   */
-  function transferFrom(
-    address sender,
-    address recipient,
-    uint256 amount
-  ) external returns (bool);
-
-  /**
-   * @dev Emitted when `value` tokens are moved from one account (`from`) to
-   * another (`to`).
-   *
-   * Note that `value` may be zero.
-   */
-  event Transfer(address indexed from, address indexed to, uint256 value);
-
-  /**
-   * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-   * a call to {approve}. `value` is the new allowance.
-   */
-  event Approval(address indexed owner, address indexed spender, uint256 value);
-}
-
-interface IFlashLoanReceiver {
-  function executeOperation(
-    address[] calldata assets,
-    uint256[] calldata amounts,
-    uint256[] calldata premiums,
-    address initiator,
-    bytes calldata params
-  ) external returns (bool);
-}
-
-/**
- * @title LendingPoolAddressesProvider contract
- * @dev Main registry of addresses part of or connected to the protocol, including permissioned roles
- * - Acting also as factory of proxies and admin of those, so with right to change its implementations
- * - Owned by the Aave Governance
- * @author Aave
- **/
-interface ILendingPoolAddressesProvider {
-  event LendingPoolUpdated(address indexed newAddress);
-  event ConfigurationAdminUpdated(address indexed newAddress);
-  event EmergencyAdminUpdated(address indexed newAddress);
-  event LendingPoolConfiguratorUpdated(address indexed newAddress);
-  event LendingPoolCollateralManagerUpdated(address indexed newAddress);
-  event PriceOracleUpdated(address indexed newAddress);
-  event LendingRateOracleUpdated(address indexed newAddress);
-  event ProxyCreated(bytes32 id, address indexed newAddress);
-  event AddressSet(bytes32 id, address indexed newAddress, bool hasProxy);
-
-  function setAddress(bytes32 id, address newAddress) external;
-
-  function setAddressAsProxy(bytes32 id, address impl) external;
-
-  function getAddress(bytes32 id) external view returns (address);
-
-  function getLendingPool() external view returns (address);
-
-  function setLendingPoolImpl(address pool) external;
-
-  function getLendingPoolConfigurator() external view returns (address);
-
-  function setLendingPoolConfiguratorImpl(address configurator) external;
-
-  function getLendingPoolCollateralManager() external view returns (address);
-
-  function setLendingPoolCollateralManager(address manager) external;
-
-  function getPoolAdmin() external view returns (address);
-
-  function setPoolAdmin(address admin) external;
-
-  function getEmergencyAdmin() external view returns (address);
-
-  function setEmergencyAdmin(address admin) external;
-
-  function getPriceOracle() external view returns (address);
-
-  function setPriceOracle(address priceOracle) external;
-
-  function getLendingRateOracle() external view returns (address);
-
-  function setLendingRateOracle(address lendingRateOracle) external;
-}
-
-interface ILendingPool {
+interface ILendingPoolV2 {
   /**
    * @dev Emitted on deposit()
    * @param reserve The address of the underlying asset of the reserve
@@ -334,12 +194,13 @@ interface ILendingPool {
    * @param to Address that will receive the underlying, same as msg.sender if the user
    *   wants to receive it on his own wallet, or a different address if the beneficiary is a
    *   different wallet
+   * @return The final amount withdrawn
    **/
   function withdraw(
     address asset,
     uint256 amount,
     address to
-  ) external;
+  ) external returns (uint256);
 
   /**
    * @dev Allows users to borrow a specific `amount` of the reserve underlying asset, provided that the borrower
@@ -374,13 +235,14 @@ interface ILendingPool {
    * @param onBehalfOf Address of the user who will get his debt reduced/removed. Should be the address of the
    * user calling the function if he wants to reduce/remove his own debt, or the address of any other
    * other borrower whose debt should be removed
+   * @return The final amount repaid
    **/
   function repay(
     address asset,
     uint256 amount,
     uint256 rateMode,
     address onBehalfOf
-  ) external;
+  ) external returns (uint256);
 
   /**
    * @dev Allows a borrower to swap his debt between stable and variable mode, or viceversa
@@ -493,14 +355,20 @@ interface ILendingPool {
    * @param asset The address of the underlying asset of the reserve
    * @return The configuration of the reserve
    **/
-  function getConfiguration(address asset) external view returns (DataTypes.ReserveConfigurationMap memory);
+  function getConfiguration(address asset)
+    external
+    view
+    returns (DataTypes.ReserveConfigurationMap memory);
 
   /**
    * @dev Returns the configuration of the user across all the reserves
    * @param user The user address
    * @return The configuration of the user
    **/
-  function getUserConfiguration(address user) external view returns (DataTypes.UserConfigurationMap memory);
+  function getUserConfiguration(address user)
+    external
+    view
+    returns (DataTypes.UserConfigurationMap memory);
 
   /**
    * @dev Returns the normalized income normalized income of the reserve
@@ -534,7 +402,7 @@ interface ILendingPool {
 
   function getReservesList() external view returns (address[] memory);
 
-  function getAddressesProvider() external view returns (ILendingPoolAddressesProvider);
+  function getAddressesProvider() external view returns (ILendingPoolAddressesProviderV2);
 
   function setPause(bool val) external;
 
