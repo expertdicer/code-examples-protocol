@@ -29,7 +29,6 @@ contract FlashloanV2 is FlashLoanReceiverBaseV2, Withdrawable {
         FlashLoanReceiverBaseV2(_addressProvider)
     {
         swapRouter  = _swapRouter;
-
     }
 
     /**
@@ -78,7 +77,7 @@ contract FlashloanV2 is FlashLoanReceiverBaseV2, Withdrawable {
         // // withdraws the AAVE, DAI and LINK collateral from the lending pool
         // flashWithdraw(lendingPool, amounts[0]);
         
-        flashDeposit(LENDING_POOL, amounts[0]);  
+        flashDeposit(LENDING_POOL, amounts[0]);
         // Approve the router to spend DAI.        
         TransferHelper.safeApprove(kovanADai, address(swapRouter), amounts[0]);
         // Naively set amountOutMinimum to 0. In production, use an oracle or other data source to choose a safer value for amountOutMinimum.       
@@ -88,7 +87,7 @@ contract FlashloanV2 is FlashLoanReceiverBaseV2, Withdrawable {
                 tokenIn: kovanADai,
                 tokenOut: kovanDai,
                 fee: poolFee,
-                recipient: msg.sender,
+                recipient: address(this),
                 deadline: block.timestamp,
                 amountIn: amounts[0],
                 amountOutMinimum: 0,
@@ -96,8 +95,9 @@ contract FlashloanV2 is FlashLoanReceiverBaseV2, Withdrawable {
             });
         // The call to exactInputSingle executes the swap.        
         uint256 amountOut = swapRouter.exactInputSingle(paramsSwap);
-        // // Approve the LendingPool contract allowance to *pull* the owed amount
-        // // i.e. AAVE V2's way of repaying the flash loan
+        emit log("amountOut", amountOut);
+        // Approve the LendingPool contract allowance to *pull* the owed amount
+        // i.e. AAVE V2's way of repaying the flash loan
 
         for (uint256 i = 0; i < assets.length; i++) {
             uint256 amountOwing = amounts[i].add(premiums[i]);
@@ -150,11 +150,6 @@ contract FlashloanV2 is FlashLoanReceiverBaseV2, Withdrawable {
             params,
             referralCode
         );
-    }
-
-
-    function showHello() public view returns(uint256) {
-        return 100;
     }
 
     /*
